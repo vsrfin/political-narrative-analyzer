@@ -2,6 +2,7 @@ streamlit
 newspaper3k
 vaderSentiment
 spacy
-bs4
+beautifulsoup4
 pandas
 matplotlib
+lxml
