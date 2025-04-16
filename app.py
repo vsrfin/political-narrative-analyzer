@@ -1,6 +1,8 @@
-# app.py
+!pip install newspaper3k vaderSentiment spacy beautifulsoup4 pandas matplotlib lxml ipywidgets
+!python -m spacy download en_core_web_sm
 
-import streamlit as st
+# app_colab.py
+
 import requests
 from bs4 import BeautifulSoup
 from newspaper import Article
@@ -74,48 +76,57 @@ def plot_sentiment_trend(df, topic):
     ax.set_ylabel("Average Sentiment")
     ax.grid(True)
     plt.xticks(rotation=45)
-    st.pyplot(fig)
+    plt.show()
 
-# Streamlit App
+# Main Function for Colab
 def main():
-    st.set_page_config(page_title="🗳️ Political Narrative Analyzer", layout="wide")
-    st.title("🗳️ Political Narrative Analyzer")
-    st.markdown("Analyze sentiment and narrative trends in political news.")
+    import ipywidgets as widgets
+    from IPython.display import display
+    
+    # User Input for Topic
+    topic_input = widgets.Text(value='US elections', description='Topic:')
+    num_articles_input = widgets.IntSlider(value=10, min=5, max=20, step=1, description='Articles:')
+    
+    display(topic_input, num_articles_input)
+    
+    def on_button_click(b):
+        topic = topic_input.value
+        num_articles = num_articles_input.value
+        
+        print(f"Fetching news articles about: {topic}")
+        
+        # Fetch URLs and analyze articles
+        urls = fetch_google_news_links(topic, num_articles)
+        data = [extract_article_data(url) for url in urls]
+        data = [d for d in data if d is not None]
+        
+        if not data:
+            print("No articles could be processed.")
+            return
 
-    topic = st.text_input("Enter a political topic:", "US elections")
-    num_articles = st.slider("Number of articles to fetch", 5, 20, 10)
+        # Create DataFrame for Display
+        df = pd.DataFrame(data)
+        
+        # Plot Sentiment Trend
+        plot_sentiment_trend(df, topic)
 
-    if st.button("🔍 Analyze"):
-        try:
-            with st.spinner("Scraping and analyzing articles..."):
-                urls = fetch_google_news_links(topic, num_articles)
-                data = [extract_article_data(url) for url in urls]
-                data = [d for d in data if d is not None]
+        # Display Articles and Sentiment Analysis
+        print("\n📰 Articles and Sentiment:")
+        for _, row in df.iterrows():
+            print(f"\nTitle: {row['title']}")
+            print(f"Date: {row['date'].strftime('%Y-%m-%d')}")
+            print(f"Sentiment Score: {row['sentiment']:.2f}")
+            print(f"Summary: {row['summary']}")
+            print(f"Read more: {row['url']}")
+        
+        # Named Entities Summary
+        print("\n📍 Named Entities Summary:")
+        print(df[["title", "people", "organizations", "locations"]])
 
-            if not data:
-                st.error("No articles could be processed.")
-                return
+    # Button to trigger analysis
+    button = widgets.Button(description="🔍 Analyze")
+    button.on_click(on_button_click)
+    display(button)
 
-            df = pd.DataFrame(data)
-
-            csv = df.to_csv(index=False).encode('utf-8')
-            st.download_button("⬇️ Download CSV", data=csv, file_name="political_news_analysis.csv", mime="text/csv")
-
-            plot_sentiment_trend(df, topic)
-
-            st.subheader("📰 Articles and Sentiment")
-            for _, row in df.iterrows():
-                with st.expander(row["title"]):
-                    st.write(f"**Date:** {row['date'].strftime('%Y-%m-%d')}")
-                    st.write(f"**Sentiment Score:** `{row['sentiment']:.2f}`")
-                    st.write(f"**Summary:** {row['summary']}")
-                    st.markdown(f"[Read more]({row['url']})")
-
-            st.subheader("📍 Named Entities Summary")
-            st.dataframe(df[["title", "people", "organizations", "locations"]])
-
-        except Exception as e:
-            st.error(f"Error occurred: {e}")
-
-if __name__ == "__main__":
-    main()
+# Run the function in Colab
+main()
