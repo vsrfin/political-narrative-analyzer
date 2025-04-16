@@ -86,32 +86,36 @@ def main():
     num_articles = st.slider("Number of articles to fetch", 5, 20, 10)
 
     if st.button("🔍 Analyze"):
-        with st.spinner("Scraping and analyzing articles..."):
-            urls = fetch_google_news_links(topic, num_articles)
-            data = [extract_article_data(url) for url in urls]
-            data = [d for d in data if d is not None]
+        try:
+            with st.spinner("Scraping and analyzing articles..."):
+                urls = fetch_google_news_links(topic, num_articles)
+                data = [extract_article_data(url) for url in urls]
+                data = [d for d in data if d is not None]
 
-        if not data:
-            st.error("No articles could be processed.")
-            return
+            if not data:
+                st.error("No articles could be processed.")
+                return
 
-        df = pd.DataFrame(data)
+            df = pd.DataFrame(data)
 
-        csv = df.to_csv(index=False).encode('utf-8')
-        st.download_button("⬇️ Download CSV", data=csv, file_name="political_news_analysis.csv", mime="text/csv")
+            csv = df.to_csv(index=False).encode('utf-8')
+            st.download_button("⬇️ Download CSV", data=csv, file_name="political_news_analysis.csv", mime="text/csv")
 
-        plot_sentiment_trend(df, topic)
+            plot_sentiment_trend(df, topic)
 
-        st.subheader("📰 Articles and Sentiment")
-        for _, row in df.iterrows():
-            with st.expander(row["title"]):
-                st.write(f"**Date:** {row['date'].strftime('%Y-%m-%d')}")
-                st.write(f"**Sentiment Score:** `{row['sentiment']:.2f}`")
-                st.write(f"**Summary:** {row['summary']}")
-                st.markdown(f"[Read more]({row['url']})")
+            st.subheader("📰 Articles and Sentiment")
+            for _, row in df.iterrows():
+                with st.expander(row["title"]):
+                    st.write(f"**Date:** {row['date'].strftime('%Y-%m-%d')}")
+                    st.write(f"**Sentiment Score:** `{row['sentiment']:.2f}`")
+                    st.write(f"**Summary:** {row['summary']}")
+                    st.markdown(f"[Read more]({row['url']})")
 
-        st.subheader("📍 Named Entities Summary")
-        st.dataframe(df[["title", "people", "organizations", "locations"]])
+            st.subheader("📍 Named Entities Summary")
+            st.dataframe(df[["title", "people", "organizations", "locations"]])
+
+        except Exception as e:
+            st.error(f"Error occurred: {e}")
 
 if __name__ == "__main__":
     main()
