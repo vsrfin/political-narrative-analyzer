@@ -1,0 +1,7 @@
+streamlit
+newspaper3k
+vaderSentiment
+spacy
+bs4
+pandas
+matplotlib
